@@ -5,7 +5,7 @@ function activate(context) {
     console.log('Congratulations, your extension "highlighter" is now active!');
 
     const highlightDecorationType = vscode.window.createTextEditorDecorationType({
-        backgroundColor: 'yellow'
+        backgroundColor: 'rgba(129,95,192,.5)'
     });
 
     const highlightCommand = vscode.commands.registerCommand('highlighter.highlightLine', function () {
@@ -67,7 +67,7 @@ function activate(context) {
                                     renderOptions: {
                                         after: {
                                             contentText: ` Highlighted by ${username}`,
-                                            color: 'rgba(255,0,0,1)'
+                                            color: 'rgba(132,105,182,.6)'
                                         }
                                     }
                                 };
