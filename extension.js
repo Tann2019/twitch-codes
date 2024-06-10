@@ -57,6 +57,8 @@ function activate(context) {
             client.connect();
 
             let currentDecorations = [];
+            let currentVote = null;
+
 
             client.on('message', (channel, tags, message, self) => {
                 if (message.startsWith('!')) {
@@ -75,7 +77,7 @@ function activate(context) {
                                 const zeroBasedLineNumber = lineNumber - 1; // convert to 0-based index
                                 const range = new vscode.Range(zeroBasedLineNumber, 0, zeroBasedLineNumber, editor.document.lineAt(zeroBasedLineNumber).text.length);
                                 let decorationOptions;
-                                if (reason.length === 0) {
+                                if (reason.length !== 0) {
                                     decorationOptions = { 
                                         range: range,
                                         renderOptions: {
@@ -96,6 +98,15 @@ function activate(context) {
                                         }
                                     };
                                 }
+
+                                // Check if a highlight already exists for this line
+                                const existingDecorationIndex = currentDecorations.findIndex(decoration => decoration.range.isEqual(range));
+                                if (existingDecorationIndex !== -1) {
+                                    // If a highlight already exists, remove it
+                                    currentDecorations.splice(existingDecorationIndex, 1);
+                                }
+
+                                // Add the new highlight
                                 currentDecorations.push(decorationOptions);
                                 editor.setDecorations(highlightDecorationType, currentDecorations);
                             }
@@ -106,6 +117,68 @@ function activate(context) {
                         if (editor) {
                             currentDecorations = []; // clear the current decorations
                             editor.setDecorations(highlightDecorationType, currentDecorations); // remove all decorations of this type
+                        }
+                    }
+
+                    if (command === 'suggest') {
+                        // Start a new vote for a code change
+                        const lineNumber = parseInt(commandParts[1]);
+                        const newCode = commandParts.slice(2).join(' ');
+                        if (!isNaN(lineNumber)) {
+                            currentVote = {
+                                lineNumber: lineNumber,
+                                newCode: newCode,
+                                yesVotes: 0,
+                                noVotes: 0
+                            };
+                            client.say(channel, `A vote has been started to change line ${lineNumber} to "${newCode}". Say !yes to approve the change or !no to reject it.`);
+                            setTimeout(() => {
+                                if (currentVote && currentVote.lineNumber === lineNumber) {
+                                    if (currentVote.yesVotes > currentVote.noVotes) {
+                                        // Apply the change
+                                        const editor = vscode.window.activeTextEditor;
+                                        if (editor) {
+                                            const zeroBasedLineNumber = currentVote.lineNumber - 1;
+                                            const range = new vscode.Range(zeroBasedLineNumber, 0, zeroBasedLineNumber, editor.document.lineAt(zeroBasedLineNumber).text.length);
+                                            editor.edit(editBuilder => {
+                                                editBuilder.replace(range, currentVote.newCode);
+                                            });
+                                            client.say(channel, `The change has been made to line ${currentVote.lineNumber}.`);
+                                        }
+                                    } else {
+                                        client.say(channel, `The change to line ${currentVote.lineNumber} has been rejected.`);
+                                    }
+                                    currentVote = null;
+                                }
+                            }, 30000); // 30000 milliseconds = 30 seconds
+                        }
+                    } else if (command === 'yes' || command === 'no') {
+                        // Count the votes
+                        if (currentVote) {
+                            if (command === 'yes') {
+                                currentVote.yesVotes++;
+                            } else {
+                                currentVote.noVotes++;
+                            }
+                
+                            // // Check if the vote has ended
+                            // if (currentVote.yesVotes + currentVote.noVotes >= 5) { // change this to the number of votes you want to require
+                            //     if (currentVote.yesVotes > currentVote.noVotes) {
+                            //         // Apply the change
+                            //         const editor = vscode.window.activeTextEditor;
+                            //         if (editor) {
+                            //             const zeroBasedLineNumber = currentVote.lineNumber - 1;
+                            //             const range = new vscode.Range(zeroBasedLineNumber, 0, zeroBasedLineNumber, editor.document.lineAt(zeroBasedLineNumber).text.length);
+                            //             editor.edit(editBuilder => {
+                            //                 editBuilder.replace(range, currentVote.newCode);
+                            //             });
+                            //             client.say(channel, `The change has been made to line ${currentVote.lineNumber}.`);
+                            //         }
+                            //     } else {
+                            //         client.say(channel, `The change to line ${currentVote.lineNumber} has been rejected.`);
+                            //     }
+                            //     currentVote = null;
+                            // }
                         }
                     }
                 }
