@@ -60,10 +60,9 @@ function activate(context) {
             client.connect();
 
             let currentDecorations = [];
-            let currentVote = null;
 
 
-            client.on('message', (channel, tags, message, self) => {
+            client.on('message', (channel, tags, message) => {
                 if (message.startsWith('!')) {
                     const username = tags['username'];
                     console.log(`Message from ${username}: ${message}`);
