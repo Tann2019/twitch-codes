@@ -26,8 +26,19 @@ function activate(context) {
     });
 
     const connectCommand = vscode.commands.registerCommand('highlighter.connect', async function () {
-        const oauthToken = await vscode.window.showInputBox({ prompt: 'Enter your OAuth token:' });
-        const channelName = await vscode.window.showInputBox({ prompt: 'Enter your channel name:' });
+        const config = vscode.workspace.getConfiguration('highlighter');
+        let oauthToken = config.get('oauthToken');
+        let channelName = config.get('channelName');
+    
+        if (!oauthToken) {
+            oauthToken = await vscode.window.showInputBox({ prompt: 'Enter your OAuth token:' });
+            await config.update('oauthToken', oauthToken, vscode.ConfigurationTarget.Global);
+        }
+    
+        if (!channelName) {
+            channelName = await vscode.window.showInputBox({ prompt: 'Enter your channel name:' });
+            await config.update('channelName', channelName, vscode.ConfigurationTarget.Global);
+        }
 
         if (oauthToken && channelName) {
             const client = new tmi.Client({
@@ -57,20 +68,34 @@ function activate(context) {
                     if (command === 'highlight') {
                         // Highlight the specified line in the editor
                         const lineNumber = parseInt(commandParts[1]);
+                        const reason = commandParts.slice(2).join(' '); // get the rest of the message as the reason
                         if (!isNaN(lineNumber)) {
                             const editor = vscode.window.activeTextEditor;
                             if (editor) {
                                 const zeroBasedLineNumber = lineNumber - 1; // convert to 0-based index
                                 const range = new vscode.Range(zeroBasedLineNumber, 0, zeroBasedLineNumber, editor.document.lineAt(zeroBasedLineNumber).text.length);
-                                const decorationOptions = { 
-                                    range: range,
-                                    renderOptions: {
-                                        after: {
-                                            contentText: ` Highlighted by ${username}`,
-                                            color: 'rgba(132,105,182,.6)'
+                                let decorationOptions;
+                                if (reason.length === 0) {
+                                    decorationOptions = { 
+                                        range: range,
+                                        renderOptions: {
+                                            after: {
+                                                contentText: ` Highlighted by ${username} for reason: ${reason}`,
+                                                color: 'rgba(132,105,182,.6)'
+                                            }
                                         }
-                                    }
-                                };
+                                    };
+                                } else {
+                                    decorationOptions = { 
+                                        range: range,
+                                        renderOptions: {
+                                            after: {
+                                                contentText: ` Highlighted by ${username}`,
+                                                color: 'rgba(132,105,182,.6)'
+                                            }
+                                        }
+                                    };
+                                }
                                 currentDecorations.push(decorationOptions);
                                 editor.setDecorations(highlightDecorationType, currentDecorations);
                             }

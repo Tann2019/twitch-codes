@@ -25,7 +25,22 @@
         "command": "highlighter.connect",
         "title": "Connect to Twitch Chat"
       }
-    ]
+    ],
+      "configuration": {
+        "title": "Highlighter",
+        "properties": {
+            "highlighter.oauthToken": {
+                "type": "string",
+                "default": "",
+                "description": "OAuth token for Twitch"
+            },
+            "highlighter.channelName": {
+                "type": "string",
+                "default": "",
+                "description": "Channel name for Twitch"
+            }
+        }
+      }
   },
   "scripts": {
     "lint": "eslint .",
