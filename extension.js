@@ -1,8 +1,5 @@
 const vscode = require('vscode');
 const tmi = require('tmi.js');
-const { handleCommand } = require('./chatCommands');
-
-
 
 function activate(context) {
     console.log('Congratulations, your extension "highlighter" is now active!');
@@ -123,7 +120,65 @@ function activate(context) {
                     }
 
                     if (command === 'suggest') {
-                        handleCommand(commandParts, channel, client);
+                        // Start a new vote for a code change
+                        const lineNumber = parseInt(commandParts[1]);
+                        const newCode = commandParts.slice(2).join(' ');
+                        if (!isNaN(lineNumber)) {
+                            currentVote = {
+                                lineNumber: lineNumber,
+                                newCode: newCode,
+                                yesVotes: 0,
+                                noVotes: 0
+                            };
+                            client.say(channel, `A vote has been started to change line ${lineNumber} to "${newCode}". Say !yes to approve the change or !no to reject it.`);
+                            setTimeout(() => {
+                                if (currentVote && currentVote.lineNumber === lineNumber) {
+                                    if (currentVote.yesVotes > currentVote.noVotes) {
+                                        // Apply the change
+                                        const editor = vscode.window.activeTextEditor;
+                                        if (editor) {
+                                            const zeroBasedLineNumber = currentVote.lineNumber - 1;
+                                            const range = new vscode.Range(zeroBasedLineNumber, 0, zeroBasedLineNumber, editor.document.lineAt(zeroBasedLineNumber).text.length);
+                                            editor.edit(editBuilder => {
+                                                editBuilder.replace(range, currentVote.newCode);
+                                            });
+                                            client.say(channel, `The change has been made to line ${currentVote.lineNumber}.`);
+                                        }
+                                    } else {
+                                        client.say(channel, `The change to line ${currentVote.lineNumber} has been rejected.`);
+                                    }
+                                    currentVote = null;
+                                }
+                            }, 30000); // 30000 milliseconds = 30 seconds
+                        }
+                    } else if (command === 'yes' || command === 'no') {
+                        // Count the votes
+                        if (currentVote) {
+                            if (command === 'yes') {
+                                currentVote.yesVotes++;
+                            } else {
+                                currentVote.noVotes++;
+                            }
+                
+                            // // Check if the vote has ended
+                            // if (currentVote.yesVotes + currentVote.noVotes >= 5) { // change this to the number of votes you want to require
+                            //     if (currentVote.yesVotes > currentVote.noVotes) {
+                            //         // Apply the change
+                            //         const editor = vscode.window.activeTextEditor;
+                            //         if (editor) {
+                            //             const zeroBasedLineNumber = currentVote.lineNumber - 1;
+                            //             const range = new vscode.Range(zeroBasedLineNumber, 0, zeroBasedLineNumber, editor.document.lineAt(zeroBasedLineNumber).text.length);
+                            //             editor.edit(editBuilder => {
+                            //                 editBuilder.replace(range, currentVote.newCode);
+                            //             });
+                            //             client.say(channel, `The change has been made to line ${currentVote.lineNumber}.`);
+                            //         }
+                            //     } else {
+                            //         client.say(channel, `The change to line ${currentVote.lineNumber} has been rejected.`);
+                            //     }
+                            //     currentVote = null;
+                            // }
+                        }
                     }
                 }
             });
