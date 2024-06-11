@@ -1,65 +1,58 @@
-# twitchdev README
+# TwitchDev Extension for Visual Studio Code
 
-This is the README for your extension "twitchdev". After writing up a brief description, we recommend including the following sections.
+This extension allows Twitch chat to interact with your Visual Studio Code editor. Users can highlight lines, suggest code changes, and vote on those changes.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+- Highlight a line of code in the editor
+- Unhighlight a line of code in the editor
+- Suggest a change to a line of code
+- Vote on suggested changes
+- Scroll to a specific line in the editor
 
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+<!-- ![Extension in action](images/extension-in-action.gif) -->
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+- Visual Studio Code
+- Node.js
+- A Twitch account
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
 This extension contributes the following settings:
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+- `twitchdev.oauthToken`: Your Twitch OAuth token.
+- `twitchdev.channelName`: The name of your Twitch channel.
+
+## Commands
+
+- `!highlight <line number> <reason>`: Highlights the specified line in the editor. The reason is optional.
+- `!unhighlight`: Removes all highlights from the editor.
+- `!suggest <line number> <new code>`: Starts a vote to change the specified line to the new code.
+- `!yes` and `!no`: Vote on the current code change suggestion.
+- `!scrollto <line number>`: Scrolls the editor to the specified line.
+- `!help`: Lists all available commands.
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+- Leaving Files removes Highlights
+- Starting a new line after highlight keeps highlight
+- cannot highlight blank lines
+- suggestion voting system is spammy
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+### 0.0.1
 
-### 1.0.0
+Initial release of TwitchDev
 
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
 
 ---
 
-## Working with Markdown
+For more information:
 
-You can author your README using Visual Studio Code.  Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux)
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux)
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
+- [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
+- [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
 
 **Enjoy!**
