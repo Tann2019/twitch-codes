@@ -57,6 +57,7 @@ function activate(context) {
             client.connect();
 
             let currentDecorations = [];
+            let currentVote = null;
 
 
             client.on('message', (channel, tags, message) => {
