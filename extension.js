@@ -121,6 +121,7 @@ function activate(context) {
                     }
 
                     if (command === 'suggest') {
+                        const editor = vscode.window.activeTextEditor;
                         // Start a new vote for a code change
                         const lineNumber = parseInt(commandParts[1]);
                         const newCode = commandParts.slice(2).join(' ');
@@ -131,7 +132,24 @@ function activate(context) {
                                 yesVotes: 0,
                                 noVotes: 0
                             };
+                            let decorationOptions;
                             client.say(channel, `A vote has been started to change line ${lineNumber} to "${newCode}". Say !yes to approve the change or !no to reject it.`);
+                            vscode.window.showInformationMessage(`A vote has been started to change line ${lineNumber} to "${newCode}".`);
+                            vscode.window.showInformationMessage(`Current vote count: Yes - ${currentVote.yesVotes}, No - ${currentVote.noVotes}`);
+                            const zeroBasedLineNumber = lineNumber - 1; // convert to 0-based index
+                            const range = new vscode.Range(zeroBasedLineNumber, 0, zeroBasedLineNumber, editor.document.lineAt(zeroBasedLineNumber).text.length);
+                            editor.revealRange(range, vscode.TextEditorRevealType.InCenter); // Scroll to the line
+                            decorationOptions = { 
+                                range: range,
+                                renderOptions: {
+                                    after: {
+                                        contentText: ` Suggested by ${username} to replace with: ${newCode}`,
+                                        color: 'rgba(255, 3, 64, 0.69)'
+                                    }
+                                }
+                            };
+                            currentDecorations.push(decorationOptions);
+                            editor.setDecorations(highlightDecorationType, currentDecorations);
                             setTimeout(() => {
                                 if (currentVote && currentVote.lineNumber === lineNumber) {
                                     if (currentVote.yesVotes > currentVote.noVotes) {
@@ -144,42 +162,65 @@ function activate(context) {
                                                 editBuilder.replace(range, currentVote.newCode);
                                             });
                                             client.say(channel, `The change has been made to line ${currentVote.lineNumber}.`);
+                                            vscode.window.showInformationMessage(`The change has been made to line ${currentVote.lineNumber}.`);
+                                            vscode.window.showInformationMessage(`Final vote count: Yes - ${currentVote.yesVotes}, No - ${currentVote.noVotes}`);
+                                            editor.revealRange(range, vscode.TextEditorRevealType.InCenter); // Scroll to the line
+                                            //remove the decoration
+                                            const existingDecorationIndex = currentDecorations.findIndex(decoration => decoration.range.isEqual(range));
+                                            if (existingDecorationIndex !== -1) {
+                                                // If a highlight already exists, remove it
+                                                currentDecorations.splice(existingDecorationIndex, 1);
+                                            }
+                                            editor.setDecorations(highlightDecorationType, currentDecorations);
                                         }
                                     } else {
                                         client.say(channel, `The change to line ${currentVote.lineNumber} has been rejected.`);
+                                        vscode.window.showInformationMessage(`The change to line ${currentVote.lineNumber} has been rejected.`);
+                                        vscode.window.showInformationMessage(`Final vote count: Yes - ${currentVote.yesVotes}, No - ${currentVote.noVotes}`);
+                                        //remove the decoration
+                                        const zeroBasedLineNumber = currentVote.lineNumber - 1;
+                                        const range = new vscode.Range(zeroBasedLineNumber, 0, zeroBasedLineNumber, editor.document.lineAt(zeroBasedLineNumber).text.length);
+                                        const existingDecorationIndex = currentDecorations.findIndex(decoration => decoration.range.isEqual(range));
+                                        editor.revealRange(range, vscode.TextEditorRevealType.InCenter); // Scroll to the line
+                                        if (existingDecorationIndex !== -1) {
+                                            // If a highlight already exists, remove it
+                                            currentDecorations.splice(existingDecorationIndex, 1);
+                                        }
+                                        editor.setDecorations(highlightDecorationType, currentDecorations);
                                     }
-                                    currentVote = null;
                                 }
-                            }, 30000); // 30000 milliseconds = 30 seconds
+                            }, 10000); // assuming the vote lasts for 10 seconds
                         }
                     } else if (command === 'yes' || command === 'no') {
                         // Count the votes
-                        if (currentVote) {
-                            if (command === 'yes') {
-                                currentVote.yesVotes++;
-                            } else {
-                                currentVote.noVotes++;
+                        let voteMessage;
+                        if (command === 'yes') {
+                            currentVote.yesVotes++;
+                            if (voteMessage) {
+                                voteMessage.hide();
                             }
-                
-                            // // Check if the vote has ended
-                            // if (currentVote.yesVotes + currentVote.noVotes >= 5) { // change this to the number of votes you want to require
-                            //     if (currentVote.yesVotes > currentVote.noVotes) {
-                            //         // Apply the change
-                            //         const editor = vscode.window.activeTextEditor;
-                            //         if (editor) {
-                            //             const zeroBasedLineNumber = currentVote.lineNumber - 1;
-                            //             const range = new vscode.Range(zeroBasedLineNumber, 0, zeroBasedLineNumber, editor.document.lineAt(zeroBasedLineNumber).text.length);
-                            //             editor.edit(editBuilder => {
-                            //                 editBuilder.replace(range, currentVote.newCode);
-                            //             });
-                            //             client.say(channel, `The change has been made to line ${currentVote.lineNumber}.`);
-                            //         }
-                            //     } else {
-                            //         client.say(channel, `The change to line ${currentVote.lineNumber} has been rejected.`);
-                            //     }
-                            //     currentVote = null;
-                            // }
+                            voteMessage = vscode.window.showInformationMessage(`Current vote count: Yes - ${currentVote.yesVotes}, No - ${currentVote.noVotes}`);
+                        } else if (command === 'no') {
+                            currentVote.noVotes++;
+                            if (voteMessage) {
+                                voteMessage.hide();
+                            }
+                            voteMessage = vscode.window.showInformationMessage(`Current vote count: Yes - ${currentVote.yesVotes}, No - ${currentVote.noVotes}`);
                         }
+                        
+                    } else if (command.startsWith('scrollto')) {
+                        const lineNumber = parseInt(commandParts[1]);
+                        if (!isNaN(lineNumber)) {
+                            const editor = vscode.window.activeTextEditor;
+                            if (editor) {
+                                const zeroBasedLineNumber = lineNumber - 1;
+                                const range = new vscode.Range(zeroBasedLineNumber, 0, zeroBasedLineNumber, editor.document.lineAt(zeroBasedLineNumber).text.length);
+                                editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+                                client.say(channel, `Scrolled to line ${lineNumber}.`);
+                            }
+                        }
+                    } else if (command === 'help') {
+                        client.say(channel, 'Available commands: !highlight <line number> <reason>, !unhighlight, !suggest <line number> <new code>, !yes, !no, !scrollto <line number>');
                     }
                 }
             });
