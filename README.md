@@ -1,4 +1,4 @@
-# TwitchDev Extension for Visual Studio Code
+# Twitch Codes Extension for Visual Studio Code
 
 This extension allows Twitch chat to interact with your Visual Studio Code editor. Users can highlight lines, suggest code changes, and vote on those changes.
 
